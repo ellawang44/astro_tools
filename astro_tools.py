@@ -45,6 +45,7 @@ def cut_wavelength(wavelength, center=670.9659, upper=10, lower=10):
         The amount to go above the center when taking the cut, in the same units as the wavelength.
     lower : Positive Real, optional
         The amount to go below the center when taking the cut, in the same units as the wavelength.
+
     Returns
     -------
     wl_cut : 2darray
@@ -72,6 +73,7 @@ def cut(wavelength, line_profile, center=670.9659, upper=10, lower=10):
         The amount to go above the center when taking the cut, in the same units as the wavelength.
     lower : Positive Real, optional
         The amount to go below the center when taking the cut, in the same units as the wavelength.
+
     Returns
     -------
     cut_data : 2darray
@@ -130,3 +132,41 @@ def vr_to_wl(vr, center=670.9659):
         return vr*center/_c
     else:
         return np.array(vr)*center/_c
+
+def vac_to_air(lam):
+    '''Convert from vacuum to air wavelengths. 
+    From https://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
+    
+    Parameters
+    ----------
+    lam : float or ndarray
+        Wavelengths in vacuum in angstroms.
+        
+    Returns
+    -------
+    air : float or ndarray
+        Wavelengths in air in angstroms.
+    '''
+
+    s = 1e4/lam
+    n = 1 + 0.0000834254 + 0.02406147 / (130 - s**2) + 0.00015998 / (38.9 - s**2)
+    return lam/n
+
+def air_to_vac(lam):
+    '''Convert from air to vacuum wavelengths. 
+    From https://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
+
+    Parameters
+    ----------
+    lam : float or ndarray
+        Wavelengths in air in angstroms.
+
+    Returns
+    -------
+    vac : float or ndarray
+        Wavelengths in vacuum in angstroms.
+    '''
+    
+    s = 1e4/lam
+    n = 1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2) + 0.0001599740894897 / (38.92568793293 - s**2)
+    return lam*n

@@ -98,3 +98,26 @@ class TestWlVr(unittest.TestCase):
         center = 700.93
         vr = wl_to_vr(wl, center=center)
         self.assertTrue(np.abs(vr_to_wl(vr, center=center) - wl) < 1e-5)
+
+
+class TestAirVac(unittest.TestCase):
+    '''Test vac_to_air and air_to_vac functions.
+    '''
+
+    def test_array(self):
+        '''Test that converting from vacuum to air and back gives the same 
+        results for array.
+        '''
+
+        wl = np.array([6000, 7000, 8000])
+        air = vac_to_air(wl)
+        np.allclose(air_to_vac(air), wl)
+
+    def test_single(self):
+        '''Test that converting from vacuum to air and back gives the same 
+        results for single.
+        '''
+        
+        wl = 6839.4
+        air = vac_to_air(wl)
+        self.assertTrue(np.abs(air_to_vac(air) - wl) < 1e-5)
