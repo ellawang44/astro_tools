@@ -1,5 +1,8 @@
 import numpy as np
 
+# define constants
+_c = 299792.458 # speed of light in km s^-1
+
 def polyfit(x, y, x_out, deg=1):
     '''Fits a polynomial to input data after shifting data to 0.
 
@@ -30,7 +33,7 @@ def polyfit(x, y, x_out, deg=1):
     y_out = np.polyval(fit, x_out - center_x)
     return y_out
 
-def cut_wavelength(wavelength, center = 670.9659, upper = 10, lower = 10):
+def cut_wavelength(wavelength, center=670.9659, upper=10, lower=10):
     """Cuts the wavelength returns the values between center - lower and center + upper. Useful for plotting mostly because many functions return a cut line profile but not cut wavelength.
     Parameters
     ----------
@@ -55,7 +58,7 @@ def cut_wavelength(wavelength, center = 670.9659, upper = 10, lower = 10):
     wl_cut = wavelength[(low <= wavelength) & (high >= wavelength)]
     return wl_cut
 
-def cut(wavelength, line_profile, center = 670.9659, upper = 10, lower = 10):
+def cut(wavelength, line_profile, center=670.9659, upper=10, lower=10):
     """Cuts the wavelength and line profile and returns the values between center - lower and center + upper.
     Parameters
     ----------
@@ -85,3 +88,21 @@ def cut(wavelength, line_profile, center = 670.9659, upper = 10, lower = 10):
     line_cut = line_profile[mask]
     cut_data = np.array([wl_cut, line_cut])
     return cut_data
+
+def wl_to_vr(wl, center=670.9659):
+    '''Converts wavelengths to radial velocity, works for errors too. wl should be in nm. Returns vr in km/s.
+    '''
+
+    if isinstance(wl, float):
+        return wl*_c/center
+    else:
+        return np.array(wl)*_c/center
+
+def vr_to_wl(vr, center=670.9659):
+    '''Converts wavelengths to radial velocity, works for errors too. vr should be in km/s. Returns wl in nm.
+    '''
+
+    if isinstance(vr, float):
+        return vr*center/_c
+    else:
+        return np.array(vr)*center/_c
