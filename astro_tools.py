@@ -90,7 +90,19 @@ def cut(wavelength, line_profile, center=670.9659, upper=10, lower=10):
     return cut_data
 
 def wl_to_vr(wl, center=670.9659):
-    '''Converts wavelengths to radial velocity, works for errors too. wl should be in nm. Returns vr in km/s.
+    '''Converts wavelengths to radial velocity, works for errors too.
+
+    Parameters
+    ----------
+    wl : float or ndarray
+        Wavelength to be converted, in nm.
+    center : float 
+        The wavelength that vr=0 is at.
+
+    Returns
+    -------
+    vr : float or ndarray
+        Radial velocity in km/s.
     '''
 
     if isinstance(wl, float):
@@ -99,7 +111,19 @@ def wl_to_vr(wl, center=670.9659):
         return np.array(wl)*_c/center
 
 def vr_to_wl(vr, center=670.9659):
-    '''Converts wavelengths to radial velocity, works for errors too. vr should be in km/s. Returns wl in nm.
+    '''Converts wavelengths to radial velocity, works for errors too. 
+    
+    Parameters
+    ----------
+    vr : float or ndarray
+        Radial velocity to be converted, in km/s.
+    center : float 
+        The wavelength that vr=0 is at.
+
+    Returns
+    -------
+    wl : float or ndarray
+        Wavelengths in nm.
     '''
 
     if isinstance(vr, float):
