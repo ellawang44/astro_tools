@@ -172,11 +172,29 @@ def air_to_vac(lam):
     return lam*n
 
 def sigma_clip(x, y, y_pred, sigma_cut=3):
+    '''clip outliers based on a sigma cut.
+
+    Parameters
+    ----------
+    x : list or 1darray
+        x values.
+    y : list or 1darray 
+        y values. 
+    y_pred : list or 1darray
+        Predicted y values.
+    sigma_cut : float
+        The tolerance on sigma cut.
+
+    Returns
+    -------
+    (x, y) : (1darray, 1darray)
+        Clipped x and y values.
+    '''
+
     x, y, y_pred = np.array([x, y, y_pred])
     y_diff = np.abs(y - y_pred)
     sigma = np.std(y_diff)
-    median = np.median(y_diff)
-    mask = np.abs(y - median) < sigma*sigma_cut
+    mask = y_diff < sigma*sigma_cut
     x = x[mask]
     y = y[mask]
     return (x, y)
