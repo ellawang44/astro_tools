@@ -170,3 +170,13 @@ def air_to_vac(lam):
     s = 1e4/lam
     n = 1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2) + 0.0001599740894897 / (38.92568793293 - s**2)
     return lam*n
+
+def sigma_clip(x, y, y_pred, sigma_cut=3):
+    x, y, y_pred = np.array([x, y, y_pred])
+    y_diff = np.abs(y - y_pred)
+    sigma = np.std(y_diff)
+    median = np.median(y_diff)
+    mask = np.abs(y - median) < sigma*sigma_cut
+    x = x[mask]
+    y = y[mask]
+    return (x, y)
