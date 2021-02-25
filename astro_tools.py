@@ -3,7 +3,7 @@ import numpy as np
 # define constants
 _c = 299792.458 # speed of light in km s^-1
 
-def polyfit(x, y, x_out, deg=1):
+def polyfit(x, y, x_out=None, deg=1):
     '''Fits a polynomial to input data after shifting data to 0.
 
     Parameters
@@ -12,8 +12,8 @@ def polyfit(x, y, x_out, deg=1):
         x values to fit over.
     y : List[Real] or 1darray
         y values to fit over.
-    x_out : List[Real]
-        Output x values. 
+    x_out : List[Real] or None
+        Output x values. If None, then return the fit.
     deg : Int, optional
         Degree of fitted polynomial. 1 by default.
 
@@ -30,6 +30,8 @@ def polyfit(x, y, x_out, deg=1):
     # fit
     center_x = np.mean(x)
     fit = np.polyfit(x - center_x, y, deg=deg)
+    if x_out is None:
+        return fit
     y_out = np.polyval(fit, x_out - center_x)
     return y_out
 
