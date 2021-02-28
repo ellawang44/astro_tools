@@ -30,8 +30,6 @@ def polyfit(x, y, x_out=None, deg=1):
     # fit
     center_x = np.mean(x)
     fit = np.polyfit(x - center_x, y, deg=deg)
-    if x_out is None:
-        return fit
     y_out = np.polyval(fit, x_out - center_x)
     return y_out
 
