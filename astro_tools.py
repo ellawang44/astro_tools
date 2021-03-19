@@ -157,9 +157,9 @@ class SpecAnalysis:
         '''
 
         for _ in range(iterations):
+            sigma = np.std(self.flux)
             flux_fit = func(self.wl, self.flux, self.flux_err, *args)
             diff = np.abs(self.flux - flux_fit)
-            sigma = np.std(diff)
             mask = diff < sigma*sigma_cut
             self.save(self.wl[mask], self.flux[mask], self.flux_err[mask])
         return self.wl, self.flux, self.flux_err

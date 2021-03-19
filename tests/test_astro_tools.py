@@ -92,7 +92,7 @@ class TestSigmaClip(unittest.TestCase):
         clip = SpecAnalysis(
             [1, 2, 3, 4, 5, 6], 
             [0.1, 0.2, 0.1, -0.1, 100, -0.2]
-        ).sigma_clip(lambda x, y, z: np.mean(y), sigma_cut=3)
+        ).sigma_clip(lambda x, y, z: np.mean(y), sigma_cut=2)
         # mean will be more affected by outliers, so std will be lower
         # which means sigma_cut can be higher to remove outlier
         assert_array_eq(clip, [
