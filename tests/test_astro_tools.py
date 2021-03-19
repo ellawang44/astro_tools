@@ -13,7 +13,6 @@ class Test_SpecAnalysis(unittest.TestCase):
 
     def test_np_array(self):
         #TODO: test all of the valueerrors are raised correctly in the init
-        #TODO: test if all functions in this class with without flux_err
         pass
 
 
@@ -51,10 +50,9 @@ class Test_cut(unittest.TestCase):
     def test_case2(self):
         cut = SpecAnalysis(
             [810, 812, 813, 816, 818, 819], 
-            [0, 1, 2, 3, 4, 5], 
-            [0.1, 0.2, 0.1, 0.1, 0.1, 0.1]
+            [0, 1, 2, 3, 4, 5]
         ).cut(center=812.8606, upper=1, lower=2)
-        assert_array_eq(cut, [[812, 813], [1, 2], [0.2, 0.1]])
+        assert_array_eq(cut, [[812, 813], [1, 2], [0, 0]])
 
     def test_case3(self):
         cut = SpecAnalysis(
@@ -72,15 +70,14 @@ class TestSigmaClip(unittest.TestCase):
     def test_mean(self):
         clip = SpecAnalysis(
             [1, 2, 3, 4, 5, 6], 
-            [0.1, 0.2, 0.1, -0.1, 100, -0.2], 
-            [0.1, 0.1, 0.1, 0.1, 10, 0.1]
+            [0.1, 0.2, 0.1, -0.1, 100, -0.2]
         ).sigma_clip(lambda x, y, z: np.mean(y), sigma_cut=3)
         # mean will be more affected by outliers, so std will be lower
         # which means sigma_cut can be higher to remove outlier
         assert_array_eq(clip, [
             [1, 2, 3, 4, 6], 
             [0.1, 0.2, 0.1, -0.1, -0.2], 
-            [0.1, 0.1, 0.1, 0.1, 0.1]
+            [0, 0, 0, 0, 0]
             ])
 
     def test_median(self):
@@ -106,6 +103,18 @@ class TestContNorm(unittest.TestCase):
     '''Test cont_norm from SpecAnalysis.
     '''
 
+    def test_nofluxerr(self):
+        norm = SpecAnalysis(
+            [1, 2, 3, 4, 5, 6, 7], 
+            [1, 1.01, 1.02, 0.03, 1.04, 1.05, 1.06]
+        ).cont_norm(4, sigma_cut=1, iterations=1)
+        expected = np.array(
+            [[1, 2, 3, 4, 5, 6, 7], 
+            [1, 1, 1, 0, 1, 1, 1], 
+            [0, 0, 0, 0, 0, 0, 0]], dtype=float
+        )
+        self.assertTrue(np.allclose(norm, expected, atol=1e-1))
+
     def test_case1(self):
         norm = SpecAnalysis(
             [1, 2, 3, 4, 5, 6, 7], 
@@ -118,6 +127,15 @@ class TestContNorm(unittest.TestCase):
             [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]], dtype=float
         )
         self.assertTrue(np.allclose(norm, expected, atol=1e-1))
+
+
+class TestGaussianBroaden(unittest.TestCase):
+    '''Test gaussian_broaden from SpecAnalysis.
+    '''
+
+    def test_case1(self):
+        #TODO: write some tests for gaussian broaden
+        pass
 
 
 class TestPolyfit(unittest.TestCase):

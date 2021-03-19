@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats.mstats import theilslopes
+from scipy.interpolate import CubicSpline
 
 # define constants
 _c = 299792.458 # speed of light in km s^-1
@@ -17,13 +18,13 @@ class SpecAnalysis:
             Input wavelengths. Needs to be monotonically increasing.
         flux : List[Real] or 1darray
             Input flux profile.
-        flux_err : List[Real] or 1darray
-            Input flux error.
+        flux_err : List[Real] or 1darray, optional
+            Input flux error. If None, then set to array of 0. 
         '''
 
         # if no error, then set error to 0
         if flux_err is None:
-            self.flux_err = np.full(len(flux), 0)
+            flux_err = np.full(len(flux), 0)
         
         # change to numpy array
         try: 
@@ -42,11 +43,24 @@ class SpecAnalysis:
             raise ValueError(
         'wavelength, flux, flux_err are not the same length')
 
-    def save(self, wl, flux, flux_err):
-        '''Save the values given into the class
+    def save(self, wavelength, flux, flux_err=None):
+        '''Save the values given into the class.
+
+        Parameters
+        ----------
+        wavelength : List[Real] or 1darray
+            Input wavelengths. Needs to be monotonically increasing.
+        flux : List[Real] or 1darray
+            Input flux profile.
+        flux_err : List[Real] or 1darray, optional
+            Input flux error. If None, then set to array 0.
         '''
 
-        self.wl = wl
+        # if no error, then set error to 0
+        if flux_err is None:
+            flux_err = np.full(len(flux), 0)
+
+        self.wl = wavelength
         self.flux = flux
         self.flux_err = flux_err
 
@@ -149,14 +163,35 @@ class SpecAnalysis:
         return self.wl, self.flux, self.flux_err
 
     def cont_norm(self, center, mask_step=0.01, sigma_cut=3, iterations=3):
-        '''Normalise the continuum for the flux and flux_error. Returns flux and flux_err.
+        '''Normalise the continuum. 
+        1. Do basic normalisation. 
+        2. Sigma clip lines and outliers. 
+        3. Fit theilslope on the clipped spectrum.
+        4. Remove fit from line. 
+        Only works for a small region.
+
+        Parameters
+        ----------
+        center : float
+            The center of the line. 
+        mask_step : float
+            Width/2 of the line. 
+        sigma_cut : float
+            The tolerance on sigma clip.
+        iterations : int
+            The number of times to iterate the sigma clip.
+
+        Returns
+        -------
+        wl, flux, flux_err : 3darray
+            Normalised wavelength, flux, and flux error.
         '''
 
         # save original values
         wl = self.wl
         flux = self.flux
         flux_err = self.flux_err
-        
+
         # first do a shitty normalisation with the main line removed
         masks = [[center - mask_step, center + mask_step]]
         self.mask_region(masks, mtype='in')
@@ -181,6 +216,34 @@ class SpecAnalysis:
         self.save(wl, flux, flux_err)
 
         return self.wl, self.flux, self.flux_err
+
+    def gaussian_broaden(center, sigma=0, num=None):
+        '''Only works for synthetic spectra because it uses cubicspline. Might 
+        be unpredictable for synthetic spectra with more than 1 line or gaps.
+        TODO: investigate behaviour on harder to deal with synthetic spectra.
+        '''
+
+        # convert to velocity space
+        vr = wl_to_v(self.wl, center=center)
+        cs = CubicSpline(vr, self.flux)
+
+        # set steps
+        if num is None:
+            num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
+        num *= 2
+        # set kernel
+        g_gen = scipy.stats.norm(0, sigma/2.35482) # convert FWHM to sigma
+
+        # convolve
+        tau = np.linspace(vr[0], vr[-1], num)
+        convolver = np.array([g_gen.pdf(t) for t in tau])
+        convolver /= np.sum(convolver)
+        integrand = [cs(vr - t)*convolver[i] for i, t in enumerate(tau)]
+        flux_conv = np.sum(integrand, axis = 0)
+
+        self.flux = flux_conv
+
+        return self.wl, self.flux  
 
 
 def polyfit(x, y, x_out=None, deg=1):
