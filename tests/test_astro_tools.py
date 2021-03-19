@@ -16,19 +16,40 @@ class Test_SpecAnalysis(unittest.TestCase):
         pass
 
 
-class Test_cut(unittest.TestCase):
-    '''Test mask_region and cut from SpecAnalysis.
+class TestMaskRegion(unittest.TestCase):
+    '''Test mask_region from SpecAnalysis. Test that masks are correctly 
+    applied for multiple masks. Single masks are tested well in TestCut.
+    '''
+
+    def test_multiple_out(self):
+        masked = SpecAnalysis(
+            [1, 2, 3, 100, 101, 102, 201, 202, 203],
+            [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        ).mask_region([[1, 3], [200, 203]])
+        assert_array_eq(masked, [[1, 2, 3, 201, 202, 203], [1, 2, 3, 7, 8, 9], [0, 0, 0, 0, 0, 0]])
+
+    def test_multiple_in(self):
+        masked = SpecAnalysis(
+            [1, 2, 3, 100, 101, 102, 201, 202, 203],
+            [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        ).mask_region([[1, 3], [200, 203]], mtype='in')
+        assert_array_eq(masked, [[100, 101, 102], [4, 5, 6], [0.4, 0.5, 0.6]])
+
+
+class TestCut(unittest.TestCase):
+    '''Test cut from SpecAnalysis.
     '''
 
     def test_empty(self):
-        assert_array_eq(SpecAnalysis([], [], []).cut(), np.array([[], [], []]))
+        assert_array_eq(SpecAnalysis([], [], []).cut(center=670.9659), np.array([[], [], []]))
 
     def test_inc_edge(self):
         cut = SpecAnalysis(
             [1, 2, 3, 4], 
             [4, 5, 6, 7], 
             [0.1, 0.2, 0.1, 0.1]
-        ).cut(center=2, upper=1, lower=1)
+        ).cut(2, upper=1, lower=1)
         assert_array_eq(cut, [[1, 2, 3], [4, 5, 6], [0.1, 0.2, 0.1]])
 
     def test_rv(self):
@@ -36,7 +57,7 @@ class Test_cut(unittest.TestCase):
             [650, 660, 671, 680, 690],
             [1, 2, 3, 4, 5],
             [0.1, 0.2, 0.2, 0.3, 0.1]
-        ).cut(lower=100, upper=100, rtype='vr')
+        ).cut(670.9659, lower=100, upper=100, rtype='vr')
         assert_array_eq(cut, [[671], [3], [0.2]])
 
     def test_case1(self):
@@ -44,14 +65,14 @@ class Test_cut(unittest.TestCase):
             [660, 669, 671, 680, 690], 
             [1, -3, -6, 0, 2], 
             [0.1, 0.1, 0.2, 0.1, 0.1]
-        ).cut()
+        ).cut(670.9659)
         assert_array_eq(cut, [[669, 671, 680], [-3, -6, 0], [0.1, 0.2, 0.1]])
 
     def test_case2(self):
         cut = SpecAnalysis(
             [810, 812, 813, 816, 818, 819], 
             [0, 1, 2, 3, 4, 5]
-        ).cut(center=812.8606, upper=1, lower=2)
+        ).cut(812.8606, upper=1, lower=2)
         assert_array_eq(cut, [[812, 813], [1, 2], [0, 0]])
 
     def test_case3(self):
@@ -59,7 +80,7 @@ class Test_cut(unittest.TestCase):
             [608, 609, 610, 612, 614], 
             [-9, 1, 203, 40, 1], 
             [0.1, 0.1, 0.1, 0.2, 0.1]
-        ).cut(center = 610.5298, upper = 3, lower = 0)
+        ).cut(610.5298, upper = 3, lower = 0)
         assert_array_eq(cut, [[612], [40], [0.2]])
 
 

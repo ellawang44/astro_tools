@@ -82,12 +82,14 @@ class SpecAnalysis:
         '''
 
         # make mask
-        mask_full = np.ones(len(self.wl), dtype=bool)
+        mask_full = np.zeros(len(self.wl), dtype=bool)
         for lower, upper in masks:
             mask = (lower <= self.wl) & (self.wl <= upper)
-            if mtype == 'in':
-                mask = ~mask
-            mask_full = mask_full & mask
+            mask_full = mask_full | mask
+
+        # flip if masking inside
+        if mtype == 'in':
+            mask_full = ~mask_full
 
         # apply mask
         self.save(
@@ -96,13 +98,13 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def cut(self, center=670.9659, upper=10, lower=10, rtype='wl'):
+    def cut(self, center, upper=10, lower=10, rtype='wl'):
         '''Cuts the wavelength, flux, and flux error and returns the values 
         between center - lower and center + upper.
 
         Parameters
         ----------
-        center : Real, optional
+        center : Real
             The center of the wavelengths where the cut should be taken, in the
             same units as the wavelength. 
         upper : Positive Real, optional
@@ -168,7 +170,7 @@ class SpecAnalysis:
         2. Sigma clip lines and outliers. 
         3. Fit theilslope on the clipped spectrum.
         4. Remove fit from line. 
-        Only works for a small region.
+        Only works for a small region with linear continuum.
 
         Parameters
         ----------
