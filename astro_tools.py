@@ -64,14 +64,14 @@ class SpecAnalysis:
         self.flux = flux
         self.flux_err = flux_err
 
-    def mask_region(self, masks, mtype='out'):
+    def mask_region(self, masks, rm='out'):
         '''Mask (remove) a region of the spectrum. 
 
         Parameters
         ----------
         masks : list of lists[float]
             The regions which you want to mask.
-        mtype : str, optional
+        rm : str, optional
             To remove the region in the mask or out. Accepted values: 'in' and 
             'out'.
 
@@ -88,7 +88,7 @@ class SpecAnalysis:
             mask_full = mask_full | mask
 
         # flip if masking inside
-        if mtype == 'in':
+        if rm == 'in':
             mask_full = ~mask_full
 
         # apply mask
@@ -98,7 +98,7 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def cut(self, center, upper=10, lower=10, rtype='wl'):
+    def cut(self, center, upper=10, lower=10, domain='wl'):
         '''Cuts the wavelength, flux, and flux error and returns the values 
         between center - lower and center + upper.
 
@@ -113,8 +113,8 @@ class SpecAnalysis:
         lower : Positive Real, optional
             The amount to go below the center when taking the cut, in the same 
             units of nm if rtype=wl, or in km/s if rtype=vr.
-        rtype : str, optional
-            The type upper and lower is in. Either wl or vr (wavelength, 
+        domain : str, optional
+            The domain upper and lower is in. Either wl or vr (wavelength, 
             radial velocity respectively).
 
         Returns
@@ -124,7 +124,7 @@ class SpecAnalysis:
         '''
 
         # convert to wavelength
-        if rtype == 'vr':
+        if domain == 'vr':
             lower = vr_to_wl(lower, center=center)
             upper = vr_to_wl(upper, center=center) 
 
@@ -157,9 +157,9 @@ class SpecAnalysis:
         '''
 
         for _ in range(iterations):
-            sigma = np.std(self.flux)
             flux_fit = func(self.wl, self.flux, self.flux_err, *args)
             diff = np.abs(self.flux - flux_fit)
+            sigma = np.std(diff)
             mask = diff < sigma*sigma_cut
             self.save(self.wl[mask], self.flux[mask], self.flux_err[mask])
         return self.wl, self.flux, self.flux_err
