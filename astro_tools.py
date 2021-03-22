@@ -134,9 +134,9 @@ class SpecAnalysis:
         self.mask_region([[low, high]])
 
         return self.wl, self.flux, self.flux_err
-
+    
     def sigma_clip(self, func, args=(), sigma_cut=3, iterations=1):
-        '''clip outliers based on a sigma cut.
+        '''Clip outliers based on a sigma cut.
 
         Parameters
         ----------
@@ -157,10 +157,10 @@ class SpecAnalysis:
         '''
 
         for _ in range(iterations):
-            sigma = np.std(self.flux)
             flux_fit = func(self.wl, self.flux, self.flux_err, *args)
-            diff = np.abs(self.flux - flux_fit)
-            mask = diff < sigma*sigma_cut
+            diff = self.flux - flux_fit
+            sigma = np.std(diff)
+            mask = np.abs(diff) < sigma*sigma_cut
             self.save(self.wl[mask], self.flux[mask], self.flux_err[mask])
         return self.wl, self.flux, self.flux_err
 
