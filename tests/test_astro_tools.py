@@ -33,7 +33,7 @@ class TestMaskRegion(unittest.TestCase):
             [1, 2, 3, 100, 101, 102, 201, 202, 203],
             [1, 2, 3, 4, 5, 6, 7, 8, 9],
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        ).mask_region([[1, 3], [200, 203]], mtype='in')
+        ).mask_region([[1, 3], [200, 203]], rm='in')
         assert_array_eq(masked, [[100, 101, 102], [4, 5, 6], [0.4, 0.5, 0.6]])
 
 
@@ -57,7 +57,7 @@ class TestCut(unittest.TestCase):
             [650, 660, 671, 680, 690],
             [1, 2, 3, 4, 5],
             [0.1, 0.2, 0.2, 0.3, 0.1]
-        ).cut(670.9659, lower=100, upper=100, rtype='vr')
+        ).cut(670.9659, lower=100, upper=100, domain='vr')
         assert_array_eq(cut, [[671], [3], [0.2]])
 
     def test_case1(self):
