@@ -196,7 +196,7 @@ class SpecAnalysis:
 
         # first do a shitty normalisation with the main line removed
         masks = [[center - mask_step, center + mask_step]]
-        self.mask_region(masks, mtype='in')
+        self.mask_region(masks, rm='in')
         med = np.median(self.flux)
         flux = flux/med
         flux_err = flux_err/med
