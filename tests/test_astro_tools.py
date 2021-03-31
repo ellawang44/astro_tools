@@ -36,6 +36,30 @@ class TestMaskRegion(unittest.TestCase):
         ).mask_region([[1, 3], [200, 203]], rm='in')
         assert_array_eq(masked, [[100, 101, 102], [4, 5, 6], [0.4, 0.5, 0.6]])
 
+    def test_empty_in(self):
+        masked = SpecAnalysis(
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1]
+        ).mask_region([[1.5, 1.7], [5.6, 7.6]], rm='in')
+        assert_array_eq(masked, [[1, 2, 3, 4, 5, 8], [1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1]])
+
+    def test_overlap_in(self):
+        masked = SpecAnalysis(
+            [1, 2, 3, 4, 5, 6],
+            [1, 2, 3, 4, 5, 6],
+            [1, 1, 1, 1, 1, 1]
+        ).mask_region([[2, 3], [2, 4]], rm='in')
+        assert_array_eq(masked, [[1, 5, 6], [1, 5, 6], [1, 1, 1]])
+
+    def test_overlap_out(self):
+        masked = SpecAnalysis(
+            [1, 2, 3, 4, 5, 6],
+            [1, 2, 3, 4, 5, 6],
+            [1, 1, 1, 1, 1, 1]
+        ).mask_region([[2, 3], [2, 4]], rm='out')
+        assert_array_eq(masked, [[2, 3, 4], [2, 3, 4], [1, 1, 1]])
+
 
 class TestCut(unittest.TestCase):
     '''Test cut from SpecAnalysis.
