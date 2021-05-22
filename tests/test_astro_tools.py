@@ -291,6 +291,21 @@ class TestRadialVelocity(unittest.TestCase):
     '''Test the radial_velocity function and its subfunctions
     '''
 
+    def test_convolve(self):
+        '''Test that convolving with multiple shifts is the same as convolving
+        with each shift individually.
+        '''
+        x = np.array([-3, -2, -1, 0, 1, 2, 3])
+        y = np.array([1, 1, 0.5, 0, 0.5, 1, 1]) - 1
+        f = interp1d(x, y)
+        y2 = np.array([1, 1, 1, 0.5, 0, 0.5, 1]) - 1
+        g = interp1d(x, y2)
+        
+        shifts = np.array([-1, 0, 1])
+        c_single = [convolve(f, g, np.array([shift]), x[1:-1])[0] for shift in shifts]
+        c_array = convolve(f, g, shifts, x[1:-1])
+        self.assertTrue(np.allclose(c_single, c_array))
+
     def test_common_range_error(self):
         #TODO: check that the valueerror is raised correctly.
         pass
@@ -322,7 +337,7 @@ class TestRadialVelocity(unittest.TestCase):
         y = np.array([1, 1, 0, 1, 1]) - 1
         f = interp1d(x, y)
         g = interp1d(x, y)
-        shifts = [-1, 0, 1]
+        shifts = np.array([-1, 0, 1])
 
         _ = cross_correlate(f, g, x_range, shifts, plot=True)
 
@@ -335,7 +350,7 @@ class TestRadialVelocity(unittest.TestCase):
         # best shift is edge or middle
         x_range = (-3, 3)
         x = [-3, -2, -1, 0, 1, 2, 3]
-        shifts = [-1, 0, 1]
+        shifts = np.array([-1, 0, 1])
         # 0 shift
         y = np.array([1, 1, 1, 0, 1, 1, 1]) - 1
         rv = radial_velocity(f(x, y), f(x, y), x_range, shifts)
@@ -351,7 +366,7 @@ class TestRadialVelocity(unittest.TestCase):
 
         # best shift is not edge value
         y = np.array([1, 1, 0.5, 0, 0.5, 1, 1]) - 1
-        shifts = [-2, -1, 0, 1, 2]
+        shifts = np.array([-2, -1, 0, 1, 2])
         # 1 shift
         y2 = np.array([1, 1, 1, 0.5, 0, 0.5, 1]) - 1
         rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
@@ -362,7 +377,7 @@ class TestRadialVelocity(unittest.TestCase):
         self.assertEqual(rv, -1)
 
         # best shift is closest tested shift value
-        shifts = [-2.2, -1.2, 0.8, 1.8]
+        shifts = np.array([-2.2, -1.2, 0.8, 1.8])
         y2 = np.array([1, 1, 1, 0.5, 0, 0.5, 1]) - 1
         rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
         self.assertEqual(rv, 0.8)

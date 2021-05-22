@@ -400,7 +400,7 @@ def convolve(f, g, n, m):
         Function 1.
     g : Function
         Function 2.
-    n : float
+    n : 1darray
         Shift applied to g.
     m : 1darray
         Discrete values at which the function is evaluated.
@@ -411,7 +411,8 @@ def convolve(f, g, n, m):
         Discrete convolution at n f*g(n).
     '''
 
-    return np.sum(f(m)*g(m+n))
+    m_shift = m + n.reshape(n.shape[0], -1) # m+n
+    return np.sum(f(m)*g(m_shift), axis=1)
 
 def common_range(x_range, shifts):
     '''Compute the common range shared after the shifts are applied.
@@ -455,7 +456,7 @@ def cross_correlate(f, g, x_range, shifts, num=10000, plot=False):
         i.e. f : [-2, 2] -> R
         g : [-1, 3] -> R
         Then x_range = (-1, 2)
-    shifts : List[Float]
+    shifts : 1darray
         The shifts to apply to the function g.
     num : int
         The number of points to sample the function f and g.
@@ -490,7 +491,7 @@ def cross_correlate(f, g, x_range, shifts, num=10000, plot=False):
         plt.legend()
         plt.show()
 
-    return np.array([convolve(f, g, s, m) for s in shifts])
+    return convolve(f, g, shifts, m)
 
 def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
     '''Compute the radial velocity from the max cross correlation.
@@ -507,7 +508,7 @@ def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
         i.e. f : [-2, 2] -> R
         g : [-1, 3] -> R
         Then x_range = (-1, 2)
-    shifts : List[Float]
+    shifts : 1darray
         The shifts to apply to the function g.
     num : int
         The number of points to sample the function f and g.
@@ -519,6 +520,9 @@ def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
     rv : Float
         The radial velocity of g with respect to f.
     '''
+
+    # cast to numpy array
+    shifts = np.array(shifts)
 
     cc = cross_correlate(f, g, x_range, shifts, num=num, plot=plot)
     return shifts[np.argmax(cc)]
