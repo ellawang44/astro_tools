@@ -295,6 +295,7 @@ class TestRadialVelocity(unittest.TestCase):
         '''Test that convolving with multiple shifts is the same as convolving
         with each shift individually.
         '''
+        
         x = np.array([-3, -2, -1, 0, 1, 2, 3])
         y = np.array([1, 1, 0.5, 0, 0.5, 1, 1]) - 1
         f = interp1d(x, y)
