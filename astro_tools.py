@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats.mstats import theilslopes
 from scipy.interpolate import CubicSpline
+import matplotlib.pyplot as plt
 
 # define constants
 _c = 299792.458 # speed of light in km s^-1
@@ -389,3 +390,135 @@ def air_to_vac(lam):
     s = 1e4/lam
     n = 1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2) + 0.0001599740894897 / (38.92568793293 - s**2)
     return lam*n
+
+def convolve(f, g, n, m):
+    '''Compute the discrete convolution.
+
+    Parameters
+    ----------
+    f : Function
+        Function 1.
+    g : Function
+        Function 2.
+    n : float
+        Shift applied to g.
+    m : 1darray
+        Discrete values at which the function is evaluated.
+
+    Returns
+    -------
+    conv : float
+        Discrete convolution at n f*g(n).
+    '''
+
+    return np.sum(f(m)*g(m+n))
+
+def common_range(x_range, shifts):
+    '''Compute the common range shared after the shifts are applied.
+
+    Parameters
+    ----------
+    x_range : Tuple(Float)
+        The range over which the functions are defined.
+    shifts : List[Float]
+        The shifts to apply to the functions.
+
+    Returns
+    -------
+    left, right : Float, Float
+        The shared range (left, right).
+    '''
+
+    min_shift = np.min(shifts)
+    max_shift = np.max(shifts)
+
+    left = max(x_range[0], x_range[0] - min_shift)
+    right = min(x_range[1], x_range[1] - max_shift)
+
+    if left == right:
+        raise ValueError('Shifts are too extreme given the x_range, there is no overlap.')
+
+    return left, right
+
+def cross_correlate(f, g, x_range, shifts, num=10000, plot=False):
+    '''Compute the cross correlation between two functions. Truncates edges, no
+    extrapolation.
+
+    Parameters
+    ----------
+    f : Function 
+        Function 1. 
+    g : Function 
+        Function 2. 
+    x_range : tuple(Float)
+        The common range that f and g are defined over. 
+        i.e. f : [-2, 2] -> R
+        g : [-1, 3] -> R
+        Then x_range = (-1, 2)
+    shifts : List[Float]
+        The shifts to apply to the function g.
+    num : int
+        The number of points to sample the function f and g.
+    plot : bool
+        Display plots for debugging.
+
+    Returns
+    -------
+    cc : List[Float]
+        The cross correlations of the given shifts.
+    '''
+
+    #TODO: x_range could be improved to take into account differences in range
+    # of f and g, this doesn't happen a lot in practice though
+
+    left, right = common_range(x_range, shifts)
+    m = np.linspace(left, right, num=num)
+
+    if plot:
+        # original functions
+        x = np.linspace(x_range[0], x_range[1], 1000)
+        plt.scatter(x, f(x), label='f', s=4, alpha=0.5)
+        plt.scatter(x, g(x), label='g', s=4, alpha=0.5)
+        # shift g
+        plt.scatter(m, g(m-np.min(shifts)), s=4, alpha=0.5,
+                    label=f'g min={np.min(shifts):.2f} shift')
+        plt.scatter(m, g(m-np.max(shifts)), s=4, alpha=0.5,
+                    label=f'g max={np.max(shifts):.2f} shift')
+        # common region
+        for line in [left, right]:
+            plt.axvline(line, color='black', linestyle='--')
+        plt.legend()
+        plt.show()
+
+    return np.array([convolve(f, g, s, m) for s in shifts])
+
+def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
+    '''Compute the radial velocity from the max cross correlation.
+    f and g must have continuum centered at 0. f(n) = g(n+rv)
+
+    Parameters
+    ----------
+    f : Function 
+        Function 1. 
+    g : Function 
+        Function 2. 
+    x_range : tuple(Float)
+        The common range that f and g are defined over. 
+        i.e. f : [-2, 2] -> R
+        g : [-1, 3] -> R
+        Then x_range = (-1, 2)
+    shifts : List[Float]
+        The shifts to apply to the function g.
+    num : int
+        The number of points to sample the function f and g.
+    plot : bool
+        Display plots for debugging.
+
+    Returns
+    -------
+    rv : Float
+        The radial velocity of g with respect to f.
+    '''
+
+    cc = cross_correlate(f, g, x_range, shifts, num=num, plot=plot)
+    return shifts[np.argmax(cc)]

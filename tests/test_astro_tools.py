@@ -1,7 +1,7 @@
 from astro_tools import *
 import numpy as np
+from scipy.interpolate import interp1d
 import unittest
-
 
 def assert_array_eq(x, y):
     assert np.array_equal(x, y)
@@ -285,3 +285,84 @@ class TestAirVac(unittest.TestCase):
         wl = 6839.4
         air = vac_to_air(wl)
         self.assertTrue(np.abs(air_to_vac(air) - wl) < 1e-5)
+
+
+class TestRadialVelocity(unittest.TestCase):
+    '''Test the radial_velocity function and its subfunctions
+    '''
+
+    def test_common_range_error(self):
+        #TODO: check that the valueerror is raised correctly.
+        pass
+
+    def test_common_range(self):
+        '''Test that the common range found.
+        '''
+
+        # if both negative and positive shifts
+        left, right = common_range((-2, 2), [-1, 0, 1])
+        self.assertEqual(left, -1)
+        self.assertEqual(right, 1)
+        # if all positive shifts
+        left, right = common_range((-2, 2), [1, 2])
+        self.assertEqual(left, -2)
+        self.assertEqual(right, 0)
+        # if all negative shifts
+        left, right = common_range((-2, 2), [-2, -1])
+        self.assertEqual(left, 0)
+        self.assertEqual(right, 2)
+
+    def plot_cc_debug(self):
+        '''Plot the cross_correlate debugging feature.
+        This function will only run if called specifically
+        '''
+        
+        x_range = (-2, 2)
+        x = [-2, -1, 0, 1, 2]
+        y = np.array([1, 1, 0, 1, 1]) - 1
+        f = interp1d(x, y)
+        g = interp1d(x, y)
+        shifts = [-1, 0, 1]
+
+        _ = cross_correlate(f, g, x_range, shifts, plot=True)
+
+    def test_radial_velocity(self):
+        '''Test radial velocity is found correctly.
+        '''
+
+        f = lambda x,y: interp1d(x, y)
+
+        # best shift is edge or middle
+        x_range = (-3, 3)
+        x = [-3, -2, -1, 0, 1, 2, 3]
+        shifts = [-1, 0, 1]
+        # 0 shift
+        y = np.array([1, 1, 1, 0, 1, 1, 1]) - 1
+        rv = radial_velocity(f(x, y), f(x, y), x_range, shifts)
+        self.assertEqual(rv, 0)
+        # 1 shift
+        y2 = np.array([1, 1, 1, 1, 0, 1, 1]) - 1
+        rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
+        self.assertEqual(rv, 1)
+        # -1 shift
+        y2 = np.array([1, 1, 0, 1, 1, 1, 1]) - 1
+        rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
+        self.assertEqual(rv, -1)
+
+        # best shift is not edge value
+        y = np.array([1, 1, 0.5, 0, 0.5, 1, 1]) - 1
+        shifts = [-2, -1, 0, 1, 2]
+        # 1 shift
+        y2 = np.array([1, 1, 1, 0.5, 0, 0.5, 1]) - 1
+        rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
+        self.assertEqual(rv, 1)
+        # -1 shift
+        y2 = np.array([1, 0.5, 0, 0.5, 1, 1, 1]) - 1
+        rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
+        self.assertEqual(rv, -1)
+
+        # best shift is closest tested shift value
+        shifts = [-2.2, -1.2, 0.8, 1.8]
+        y2 = np.array([1, 1, 1, 0.5, 0, 0.5, 1]) - 1
+        rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
+        self.assertEqual(rv, 0.8)
