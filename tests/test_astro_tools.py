@@ -382,3 +382,13 @@ class TestRadialVelocity(unittest.TestCase):
         y2 = np.array([1, 1, 1, 0.5, 0, 0.5, 1]) - 1
         rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
         self.assertEqual(rv, 0.8)
+
+        # test sine wave
+        x_range = (-100, 100)
+        x = np.linspace(-100, 100, 1000)
+        y = np.sin(x)
+        shift = 1.482
+        y2 = np.sin(x+shift)
+        shifts = np.linspace(-2, 2, 4000)
+        rv = radial_velocity(f(x, y), f(x, y2), x_range, shifts)
+        self.assertTrue(abs(rv - (-shift)) < 1e-3)

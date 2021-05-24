@@ -481,9 +481,9 @@ def cross_correlate(f, g, x_range, shifts, num=10000, plot=False):
         plt.scatter(x, f(x), label='f', s=4, alpha=0.5)
         plt.scatter(x, g(x), label='g', s=4, alpha=0.5)
         # shift g
-        plt.scatter(m, g(m-np.min(shifts)), s=4, alpha=0.5,
+        plt.scatter(m, g(m+np.max(shifts)), s=4, alpha=0.5,
                     label=f'g min={np.min(shifts):.2f} shift')
-        plt.scatter(m, g(m-np.max(shifts)), s=4, alpha=0.5,
+        plt.scatter(m, g(m+np.min(shifts)), s=4, alpha=0.5,
                     label=f'g max={np.max(shifts):.2f} shift')
         # common region
         for line in [left, right]:
@@ -495,7 +495,7 @@ def cross_correlate(f, g, x_range, shifts, num=10000, plot=False):
 
 def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
     '''Compute the radial velocity from the max cross correlation.
-    f and g must have continuum centered at 0. f(n) = g(n+rv)
+    f and g must have continuum centered at 0. f(n) = g(n-rv)
 
     Parameters
     ----------
