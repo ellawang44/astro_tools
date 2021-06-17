@@ -166,7 +166,7 @@ class SpecAnalysis:
         return self.wl, self.flux, self.flux_err
 
     def cont_norm(self, center, mask_step=0.01, sigma_cut=3, iterations=3):
-        '''Normalise the continuum. 
+        '''Normalise the continuum. Assumes you're normalising a line profile. 
         1. Do basic normalisation. 
         2. Sigma clip lines and outliers. 
         3. Fit theilslope on the clipped spectrum.
