@@ -62,11 +62,11 @@ class ffnn:
             if type(f_act) is list: # custom
                 self.f_act = f_act
             else: # create list based on other settings
-                self.f_act = [f_act for _ in range(len(self.neurons)+1)]
+                self.f_act = [f_act for _ in range(len(self.neurons))]
 
             # check that the neuron and activation layers are the same length
-            if len(self.neurons) != len(self.f_act)-1:
-                raise ValueError('length of neurons and f_act is not compatible, need len(neurons) == len(f_act)-1')
+            if not ((len(self.neurons) == len(self.f_act)-1) or (len(self.neurons) == len(self.f_act))):
+                raise ValueError('length of neurons and f_act is not compatible, need len(neurons) == len(f_act)-1 or len(neurons) == len(f_act) (last f_act is linear)')
 
         self.loss = loss
         self.max_iter = max_iter
@@ -85,10 +85,16 @@ class ffnn:
         n_blocks = [nn.Linear(neurons[ind], neurons[ind+1]) for ind in range(len(neurons)-1)]
         
         # make model by folding n_blocks and f_blocks
-        model = []
-        for n, f in zip(n_blocks, self.f_act):
-            model.append(n)
-            model.append(f)
+        if len(n_blocks) == len(self.f_act): # f_act last layer
+            model = []
+            for n, f in zip(n_blocks, self.f_act):
+                model.append(n)
+                model.append(f)
+        elif len(n_blocks)-1 == len(self.f_act): # linear f_act last
+            model = [n_blocks[0]]
+            for n, f in zip(n_blocks[1:], self.f_act):
+                model.append(f)
+                model.append(n)
 
         self.model = nn.Sequential(*model)
 

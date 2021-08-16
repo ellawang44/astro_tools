@@ -11,14 +11,14 @@ class Test_make_model(unittest.TestCase):
         '''
         FFNN = ffnn.ffnn(2, 10)
         FFNN._make_model(4, 1)
-        self.assertEqual(len(FFNN.model), len([(4, 10), 'relu', (10, 1), 'relu']))
+        self.assertEqual(len(FFNN.model), len([(4, 10), 'relu', (10, 1)]))
 
     def test_neuron_list(self):
         '''
         '''
         FFNN = ffnn.ffnn(0, [10, 20])
         FFNN._make_model(4, 1)
-        self.assertEqual(len(FFNN.model), len([(4, 10), 'relu', (10, 20), 'relu', (20, 1), 'relu']))
+        self.assertEqual(len(FFNN.model), len([(4, 10), 'relu', (10, 20), 'relu', (20, 1)]))
     
     def test_list(self):
         '''Both neuron and f_act are lists
