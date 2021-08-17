@@ -115,7 +115,7 @@ class ffnn:
             return True
         return False
 
-    def train(self, X, y, seed=None):
+    def train(self, X, y, path=None, seed=None):
         '''Train model.
 
         Parameters
@@ -124,6 +124,8 @@ class ffnn:
             The features matrix.
         y : ndarray
             The outputs in the same row order as X.
+        path : str, optional
+            Path to save the model to. Needs to be a folder. All previous files with same name will be overwritten. If folder doesn't exist, it will be created. If no path given, best holdout model will not be saved. 
         seed : int, optional
             The seed to use when generating the holdout set. 
         '''
@@ -205,6 +207,9 @@ class ffnn:
             self.model.eval() # put in test mode
             with torch.no_grad():
                 loss_holdout = self.loss(self.model(holdout_X),     holdout_y).item()
+                # save smallest loss 
+                if (path is not None) and (len(self.history['holdout']) > 0) and (loss_holdout < np.min(self.history['holdout'])):
+                    self.save(path)
                 self.history['holdout'].append(loss_holdout)
             
     def predict(self, X):
