@@ -206,7 +206,7 @@ class ffnn:
             # compute loss of holdout
             self.model.eval() # put in test mode
             with torch.no_grad():
-                loss_holdout = self.loss(self.model(holdout_X),     holdout_y).item()
+                loss_holdout = self.loss(self.model(holdout_X), holdout_y).item()
                 # save smallest loss 
                 if (path is not None) and (len(self.history['holdout']) > 0) and (loss_holdout < np.min(self.history['holdout'])):
                     self.save(path)
