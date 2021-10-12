@@ -8,7 +8,7 @@ import os
 
 from torch.utils.data import DataLoader
 
-class ffnn:
+class FFNN:
     '''Feedforward neural network.
 
     Not intended for big models!
