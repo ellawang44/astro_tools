@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats.mstats import theilslopes
+from scipy import stats
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 
@@ -208,7 +208,7 @@ class SpecAnalysis:
         self.sigma_clip(median, sigma_cut=sigma_cut, iterations=iterations)
 
         # fit
-        fit = theilslopes(self.flux, self.wl)
+        fit = stats.mstats.theilslopes(self.flux, self.wl)
         grad = fit[0]
         intercept = fit[1]
 
@@ -235,7 +235,7 @@ class SpecAnalysis:
             num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
         num *= 2
         # set kernel
-        g_gen = scipy.stats.norm(0, sigma/2.35482) # convert FWHM to sigma
+        g_gen = stats.norm(0, sigma/2.35482) # convert FWHM to sigma
 
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
