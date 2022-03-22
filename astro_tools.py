@@ -227,7 +227,7 @@ class SpecAnalysis:
         '''
 
         # convert to velocity space
-        vr = wl_to_v(self.wl, center=center)
+        vr = wl_to_vr(self.wl, center=center)
         cs = CubicSpline(vr, self.flux)
 
         # set steps
@@ -526,3 +526,74 @@ def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
 
     cc = cross_correlate(f, g, x_range, shifts, num=num, plot=plot)
     return shifts[np.argmax(cc)]
+
+# solar abundances from asplund 2020
+abundances = [12.00, 10.914,
+             0.96, 1.38, 2.70, 8.46, 7.83, 8.69, 4.40, 8.06,
+             6.22, 7.55, 6.43, 7.51, 5.41, 7.12, 5.31, 6.38,
+             5.07, 6.30, 3.14, 4.97, 3.90, 5.62, 5.42, 7.46, 4.94,
+             6.20, 4.18, 4.56, 3.02, 3.62, 2.30, 3.34, 2.54, 3.12,
+             2.32, 2.83, 2.21, 2.59, 1.47, 1.88, -np.inf, 1.75, 0.78,
+             1.57, 0.96, 1.71, 0.80, 2.02, 1.01, 2.18, 1.55, 2.22,
+             1.08, 2.27, 1.11, 1.58, 0.75, 1.42, -np.inf, 0.95, 0.52,
+             1.08, 0.31, 1.10, 0.48, 0.93, 0.11, 0.85, 0.10, 0.85,
+             -0.15, 0.79, 0.26, 1.35, 1.32, 1.61, 0.91, 1.17, 0.92,
+             1.95, 0.65, -np.inf, -np.inf, -np.inf,
+             -np.inf, -np.inf, -np.inf, 0.03, -np.inf, -0.54, -np.inf, -np.inf, -np.inf,
+            -np.inf, -np.inf, -np.inf, -np.inf]
+
+# atomic mass units of elements, from blue I think
+amu = [1.008, 4.003, 6.941, 9.012, 10.811, 12.011, 14.007, 15.999, 
+        18.998, 20.18, 22.99, 24.305, 26.982, 28.086, 30.974, 32.065, 
+        35.453, 39.948, 39.098, 40.078, 44.956, 47.867, 50.942, 51.996, 
+        54.938, 55.845, 58.933, 58.693, 63.546, 65.409, 69.723, 72.64, 
+        74.922, 78.96, 79.904, 83.798, 85.468, 87.62, 88.906, 91.224, 
+        92.906, 95.94, 98.0, 101.07, 102.906, 106.42, 107.868, 112.411, 
+        114.818, 118.71, 121.76, 127.6, 126.904, 131.293, 132.905, 
+        137.327, 138.906, 140.116, 140.908, 144.24, 145.0, 150.36, 
+        151.964, 157.25, 158.925, 162.5, 164.93, 167.259, 168.934, 
+        173.04, 174.967, 178.49, 180.948, 183.84, 186.207, 190.23, 
+        192.217, 195.078, 196.967, 200.59, 204.383, 207.2, 208.98, 
+        209.0, 210.0, 222.0, 223.0, 226.0, 227.0, 232.038, 231.036, 
+        238.029, 237.0,244.0,243.0,247.0,247.0,251.0,254.0]
+
+def met_mass_frac(abundances):
+    '''Calculate the metallicity from abundances. Mass fraction. 
+    Theorist definition (without log10).
+
+    Parameters
+    ----------
+    abundances : List[Float]
+        Abundances.
+
+    Returns
+    -------
+    met : Float
+        The mass fraction metallicity.
+    '''
+
+    abund_raw = np.array([10**(abund-12) for abund in abundances]) # get rid of +12 and log
+    abund_mass = np.array(amu) * 1.660539040e-24 * abund_raw # mass in g
+    abund_perc = abund_mass / np.sum(abund_mass)
+    met = np.sum(abund_perc[2:])
+    return met
+
+def met_num_frac(abundances):
+    '''Calculate the metallicity from abundances. Number fraction. 
+    Observer definition (with log10).
+
+    Parameters
+    ----------
+    abundances : List[Float]
+        Abundances.
+
+    Returns
+    -------
+    met : Float
+        The number fraction metallicity.
+    '''
+
+    abund_raw = np.array([10**(abund-12) for abund in abundances]) # get rid of +12 and log
+    abund_perc = abund_raw / np.sum(abund_raw)
+    met = np.sum(abund_perc[2:])
+    return np.log10(met)
