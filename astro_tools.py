@@ -220,7 +220,7 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def gaussian_broaden(center, sigma=0, num=None):
+    def gaussian_broaden(self, center, sigma=0, num=None):
         '''Only works for synthetic spectra because it uses cubicspline. Might 
         be unpredictable for synthetic spectra with more than 1 line or gaps.
         TODO: investigate behaviour on harder to deal with synthetic spectra.
