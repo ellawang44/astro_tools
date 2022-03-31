@@ -240,9 +240,11 @@ class SpecAnalysis:
 
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
-        convolver = np.array([g_gen.pdf(t) for t in tau])
+        convolver = g_gen.pdf(tau)
         convolver /= np.sum(convolver)
-        integrand = [cs(vr - t)*convolver[i] for i, t in enumerate(tau)]
+        create_x = (np.repeat([vr], tau.shape[0], axis=0).T - tau).T
+        shifted_spec = cs(create_x)
+        integrand = (shifted_spec.T*convolver).T
         flux_conv = np.sum(integrand, axis = 0)
 
         self.flux = flux_conv
