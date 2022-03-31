@@ -227,7 +227,8 @@ class SpecAnalysis:
         '''
 
         # convert to velocity space
-        vr = wl_to_vr(self.wl, center=center)
+        delta_wl = self.wl - center
+        vr = wl_to_vr(delta_wl, center=center)
         cs = CubicSpline(vr, self.flux)
 
         # set steps
