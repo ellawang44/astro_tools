@@ -220,10 +220,10 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def gaussian_broaden(self, center, sigma=0, num=None):
+    def _gaussian_broaden(self, center, sigma=0, num=None):
         '''Only works for synthetic spectra because it uses cubicspline. Might 
         be unpredictable for synthetic spectra with more than 1 line or gaps.
-        TODO: investigate behaviour on harder to deal with synthetic spectra.
+        Should be ok for harder spectra, need to monitor effects. 
         '''
 
         # convert to velocity space
@@ -234,7 +234,7 @@ class SpecAnalysis:
         # set steps
         if num is None:
             num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
-        num *= 2
+            num *= 2
         # set kernel
         g_gen = stats.norm(0, sigma/2.35482) # convert FWHM to sigma
 
@@ -242,14 +242,49 @@ class SpecAnalysis:
         tau = np.linspace(vr[0], vr[-1], num)
         convolver = g_gen.pdf(tau)
         convolver /= np.sum(convolver)
-        create_x = (np.repeat([vr], tau.shape[0], axis=0).T - tau).T
+        create_x = np.repeat([vr], tau.shape[0], axis=0).T - tau
         shifted_spec = cs(create_x)
-        integrand = (shifted_spec.T*convolver).T
-        flux_conv = np.sum(integrand, axis = 0)
+
+        integrand = shifted_spec*convolver
+        flux_conv = np.sum(integrand, axis=1)
 
         self.flux = flux_conv
 
         return self.wl, self.flux  
+
+    def gaussian_broaden(self, center, sigma=0, num=None):
+        '''Only works for synthetic spectra because it uses cubicspline.
+        Can change to not using cubicspline, but will introduce numerical differences due to under sampling of the gaussian + spectra.
+        Works better than hidden version because this one doesn't extrapolate spectra. It does compensate by scaling edge gaussians funny, so might still have some edge effects.  
+        Might be unpredictable for synthetic spectra with more than 1 line or gaps.
+        Should be ok for harder spectra, need to monitor effects. 
+        Idea is that the gaussians are placed where there are data points in the input spectra. This should help provide enough kernels for broadening where there is information. 
+        '''
+
+        # convert to velocity space
+        delta_wl = self.wl - center
+        vr = wl_to_vr(delta_wl, center=center)
+        cs = CubicSpline(vr, self.flux)
+
+        # set steps
+        if num is None:
+            num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
+            num *= 2
+        # set kernel
+        g_gen = stats.norm(0, sigma/2.35482)  # convert FWHM to sigma
+
+        # convolve
+        tau = np.linspace(vr[0], vr[-1], num)
+        create_x = vr - np.repeat([tau], len(vr), axis=0).T
+        convolver = g_gen.pdf(create_x)
+        convolver = (convolver/np.sum(convolver, axis=0)).T
+        spec = cs(tau)
+        integrand = spec*convolver
+        flux_conv = np.sum(integrand, axis=1)
+
+        self.flux = flux_conv
+
+        return self.wl, self.flux
 
 
 def polyfit(x, y, x_out=None, deg=1):
