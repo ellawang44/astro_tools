@@ -236,13 +236,16 @@ class SpecAnalysis:
             num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
             num *= 2
         # set kernel
-        g_gen = stats.norm(0, sigma/2.35482) # convert FWHM to sigma
+        sig = sigma/2.35482
+        g_gen = stats.norm(0, sig) # convert FWHM to sigma
 
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
-        convolver = g_gen.pdf(tau)
+        mask = np.abs(tau) <= sig*5
+        convolver = g_gen.pdf(tau[mask])
         convolver /= np.sum(convolver)
-        create_x = np.repeat([vr], tau.shape[0], axis=0).T - tau
+        create_x = (np.repeat([vr], tau.shape[0], axis=0).T - tau).T
+        create_x = create_x[mask].T
         shifted_spec = cs(create_x)
 
         integrand = shifted_spec*convolver
@@ -254,11 +257,13 @@ class SpecAnalysis:
 
     def gaussian_broaden(self, center, sigma=0, num=None):
         '''Only works for synthetic spectra because it uses cubicspline.
+        Use the astropy version if you are already equidistant in velocity space without interpolation. Astropy convolves in pixel space. (stddev = speed of light / resolution / FWHM / velocity difference between adjacent pixels)
         Can change to not using cubicspline, but will introduce numerical differences due to under sampling of the gaussian + spectra.
         Works better than hidden version because this one doesn't extrapolate spectra. It does compensate by scaling edge gaussians funny, so might still have some edge effects.  
         Might be unpredictable for synthetic spectra with more than 1 line or gaps.
         Should be ok for harder spectra, need to monitor effects. 
         Idea is that the gaussians are placed where there are data points in the input spectra. This should help provide enough kernels for broadening where there is information. 
+        sigma = speed of light / resolution
         '''
 
         # convert to velocity space
@@ -271,16 +276,18 @@ class SpecAnalysis:
             num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
             num *= 2
         # set kernel
-        g_gen = stats.norm(0, sigma/2.35482)  # convert FWHM to sigma
+        sig = sigma/2.35482
+        g_gen = stats.norm(0, sig)  # convert FWHM to sigma
 
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
-        create_x = vr - np.repeat([tau], len(vr), axis=0).T
-        convolver = g_gen.pdf(create_x)
-        convolver = (convolver/np.sum(convolver, axis=0)).T
+        create_x = (vr - np.repeat([tau], len(vr), axis=0).T).T
+        masks = [np.abs(row) < sig*5 for row in create_x]
+        inds = range(len(masks))
+        convolver = [g_gen.pdf(create_x[ind][masks[ind]]) for ind in inds]
+        convolver = [convolver[ind]/np.sum(convolver[ind]) for ind in inds]
         spec = cs(tau)
-        integrand = spec*convolver
-        flux_conv = np.sum(integrand, axis=1)
+        flux_conv = np.array([np.sum(spec[masks[ind]]*convolver[ind]) for ind in inds])
 
         self.flux = flux_conv
 
