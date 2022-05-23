@@ -661,5 +661,5 @@ def gen_colours(colour_map, num):
     '''
 
     cmap = cm.get_cmap(colour_map)
-    nums = np.linspace(0, 255, num)
+    nums = [int(round(i)) for i in np.linspace(0, 255, num)]
     return cmap(nums)
