@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
 # define constants
 _c = 299792.458 # speed of light in km s^-1
@@ -642,3 +643,23 @@ def met_num_frac(abundances):
     abund_perc = abund_raw / np.sum(abund_raw)
     met = np.sum(abund_perc[2:])
     return np.log10(met)
+
+def gen_colours(colour_map, num):
+    '''Generate equally spaced colours based upon an input colour map.
+
+    Parameters
+    ----------
+    colour_map : str
+        The colour map to draw colours from.
+    num : int
+        The number of colours to get.
+
+    Returns
+    -------
+    colours : 2darray
+        The colours drawn in rgb values. 
+    '''
+
+    cmap = cm.get_cmap(colour_map)
+    nums = np.linspace(0, 255, num)
+    return cmap(nums)
