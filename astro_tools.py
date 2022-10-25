@@ -62,9 +62,9 @@ class SpecAnalysis:
         if flux_err is None:
             flux_err = np.full(len(flux), 0)
 
-        self.wl = wavelength
-        self.flux = flux
-        self.flux_err = flux_err
+        self.wl = np.copy(wavelength)
+        self.flux = np.copy(flux)
+        self.flux_err = np.copy(flux_err)
 
     def mask_region(self, masks, rm='out'):
         '''Mask (remove) a region of the spectrum. 
@@ -192,9 +192,9 @@ class SpecAnalysis:
         '''
 
         # save original values
-        wl = self.wl
-        flux = self.flux
-        flux_err = self.flux_err
+        wl = np.copy(self.wl)
+        flux = np.copy(self.flux)
+        flux_err = np.copy(self.flux_err)
 
         # first do a shitty normalisation with the main line removed
         masks = [[center - mask_step, center + mask_step]]
