@@ -245,6 +245,8 @@ class FFNN:
         try:
             np.save(f'{path}/{model}_train_hist', self.history['train'])
             np.save(f'{path}/{model}_holdout_hist', self.history['holdout'])
+        except FileNotFoundError:
+            pass
 
     def load(self, path, model='ffnn'):
         '''Load a saved model.
