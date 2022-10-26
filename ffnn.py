@@ -258,7 +258,7 @@ class FFNN:
         '''
 
         self.model = torch.load(f'{path}/{model}')
-        if os.path.exists(f'{path}/{model}_train_hist.npy') and os.path.exists(f'{path}/{model}_holdout_hist.npy')):
+        if os.path.exists(f'{path}/{model}_train_hist.npy') and os.path.exists(f'{path}/{model}_holdout_hist.npy'):
             self.history = {
                 'train':np.load(f'{path}/{model}_train_hist.npy'), 
                 'holdout':np.load(f'{path}/{model}_holdout_hist.npy')}
