@@ -242,8 +242,9 @@ class FFNN:
         if not os.path.exists(path):
             os.mkdir(path)
         torch.save(self.model, f'{path}/{model}')
-        np.save(f'{path}/{model}_train_hist', self.history['train'])
-        np.save(f'{path}/{model}_holdout_hist', self.history['holdout'])
+        try:
+            np.save(f'{path}/{model}_train_hist', self.history['train'])
+            np.save(f'{path}/{model}_holdout_hist', self.history['holdout'])
 
     def load(self, path, model='ffnn'):
         '''Load a saved model.
@@ -255,6 +256,7 @@ class FFNN:
         '''
 
         self.model = torch.load(f'{path}/{model}')
-        self.history = {
-            'train':np.load(f'{path}/{model}_train_hist.npy'), 
-            'holdout':np.load(f'{path}/{model}_holdout_hist.npy')}
+        if os.path.exists(f'{path}/{model}_train_hist.npy') and os.path.exists(f'{path}/{model}_holdout_hist.npy')):
+            self.history = {
+                'train':np.load(f'{path}/{model}_train_hist.npy'), 
+                'holdout':np.load(f'{path}/{model}_holdout_hist.npy')}
