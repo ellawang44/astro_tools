@@ -255,15 +255,11 @@ class SpecAnalysis:
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
         mask = np.abs(tau) <= sig*5
-        plt.plot(tau, g_gen.pdf(tau))
-        plt.show()
         convolver = g_gen.pdf(tau[mask])
         convolver /= np.sum(convolver)
         create_x = (np.repeat([vr], tau.shape[0], axis=0).T - tau).T
         create_x = create_x[mask].T
         shifted_spec = cs(create_x)
-        for x, y in zip(create_x, shifted_spec):
-            plt.plot(x, y)
 
         integrand = shifted_spec*convolver
         flux_conv = np.sum(integrand, axis=1)
