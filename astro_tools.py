@@ -232,22 +232,38 @@ class SpecAnalysis:
         vr = wl_to_vr(delta_wl, center=center)
         cs = CubicSpline(vr, self.flux)
 
-        # set steps
-        if num is None:
-            num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
-            num *= 2
         # set kernel
         sig = sigma/2.35482
         g_gen = stats.norm(0, sig) # convert FWHM to sigma
 
+        # set steps
+        if num is None:
+            vr_dist = vr[-1] - vr[0]
+            # this is based on the spectra
+            # sample to the same as the minimum step size given in the input spectra
+            step_size = np.min(vr[1:] - vr[:-1])
+            num_spec = int(vr_dist / step_size) + 1
+            num_spec *= 2 # something about Nyquist theorem... I mean this isn't really frequency, but if you squint...
+            # this is based on the sigma
+            # sample such that the gaussians are resolved by 5 points within 3 sigma
+            num_points = 5
+            step_size = 2*sig*3/num_points
+            num_gauss = int(vr_dist / step_size) + 1
+            # pick the maximum, or else sampling goes funny
+            num = max(num_spec, num_gauss)
+
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
         mask = np.abs(tau) <= sig*5
+        plt.plot(tau, g_gen.pdf(tau))
+        plt.show()
         convolver = g_gen.pdf(tau[mask])
         convolver /= np.sum(convolver)
         create_x = (np.repeat([vr], tau.shape[0], axis=0).T - tau).T
         create_x = create_x[mask].T
         shifted_spec = cs(create_x)
+        for x, y in zip(create_x, shifted_spec):
+            plt.plot(x, y)
 
         integrand = shifted_spec*convolver
         flux_conv = np.sum(integrand, axis=1)
@@ -264,7 +280,7 @@ class SpecAnalysis:
         Might be unpredictable for synthetic spectra with more than 1 line or gaps.
         Should be ok for harder spectra, need to monitor effects. 
         Idea is that the gaussians are placed where there are data points in the input spectra. This should help provide enough kernels for broadening where there is information. 
-        sigma = speed of light / resolution
+        sigma = speed of light / resolution (FWHM in km/s)
         '''
 
         # convert to velocity space
@@ -272,13 +288,25 @@ class SpecAnalysis:
         vr = wl_to_vr(delta_wl, center=center)
         cs = CubicSpline(vr, self.flux)
 
-        # set steps
-        if num is None:
-            num = int((vr[-1] - vr[0]) / np.min(vr[1:] - vr[:-1])) + 1
-            num *= 2
         # set kernel
         sig = sigma/2.35482
         g_gen = stats.norm(0, sig)  # convert FWHM to sigma
+
+        # set steps
+        if num is None:
+            vr_dist = vr[-1] - vr[0]
+            # this is based on the spectra
+            # sample to the same as the minimum step size given in the input spectra
+            step_size = np.min(vr[1:] - vr[:-1])
+            num_spec = int(vr_dist / step_size) + 1
+            num_spec *= 2 # something about Nyquist theorem... I mean this isn't really frequency, but if you squint...
+            # this is based on the sigma
+            # sample such that the gaussians are resolved by 5 points within 3 sigma
+            num_points = 5
+            step_size = 2*sig*3/num_points
+            num_gauss = int(vr_dist / step_size) + 1
+            # pick the maximum, or else sampling goes funny
+            num = max(num_spec, num_gauss)
 
         # convolve
         tau = np.linspace(vr[0], vr[-1], num)
