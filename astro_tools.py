@@ -221,7 +221,7 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def _gaussian_broaden(self, center, sigma=0, num=None):
+    def _gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline. Might 
         be unpredictable for synthetic spectra with more than 1 line or gaps.
         Should be ok for harder spectra, need to monitor effects. 
@@ -233,8 +233,11 @@ class SpecAnalysis:
         cs = CubicSpline(vr, self.flux)
 
         # set kernel
-        sig = sigma/2.35482
-        g_gen = stats.norm(0, sig) # convert FWHM to sigma
+        if mode == 'FWHM':
+            sig = broad/2.35482
+        elif mode == 'std':
+            sig = broad
+        g_gen = stats.norm(0, sig) 
 
         # set steps
         if num is None:
@@ -268,7 +271,7 @@ class SpecAnalysis:
 
         return self.wl, self.flux  
 
-    def gaussian_broaden(self, center, sigma=0, num=None):
+    def gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline.
         Use the astropy version if you are already equidistant in velocity space without interpolation. Astropy convolves in pixel space. (stddev = speed of light / resolution / FWHM / velocity difference between adjacent pixels)
         Can change to not using cubicspline, but will introduce numerical differences due to under sampling of the gaussian + spectra.
@@ -276,7 +279,7 @@ class SpecAnalysis:
         Might be unpredictable for synthetic spectra with more than 1 line or gaps.
         Should be ok for harder spectra, need to monitor effects. 
         Idea is that the gaussians are placed where there are data points in the input spectra. This should help provide enough kernels for broadening where there is information. 
-        sigma = speed of light / resolution (FWHM in km/s)
+        broad = speed of light / resolution (FWHM in km/s)
         '''
 
         # convert to velocity space
@@ -285,8 +288,11 @@ class SpecAnalysis:
         cs = CubicSpline(vr, self.flux)
 
         # set kernel
-        sig = sigma/2.35482
-        g_gen = stats.norm(0, sig)  # convert FWHM to sigma
+        if mode == 'FWHM':
+            sig = broad/2.35482
+        elif mode == 'std':
+            sig = broad
+        g_gen = stats.norm(0, sig)  
 
         # set steps
         if num is None:
