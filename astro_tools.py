@@ -21,15 +21,15 @@ class SpecAnalysis:
         flux : List[Real] or 1darray
             Input flux profile.
         flux_err : List[Real] or 1darray, optional
-            Input flux error. If None, then set to array of 0. 
+            Input flux error. If None, then set to array of 0.
         '''
 
         # if no error, then set error to 0
         if flux_err is None:
             flux_err = np.full(len(flux), 0)
-        
+
         # change to numpy array
-        try: 
+        try:
             self.wl = np.array(wavelength, dtype=float)
             self.flux = np.array(flux, dtype=float)
             self.flux_err = np.array(flux_err, dtype=float)
@@ -67,14 +67,14 @@ class SpecAnalysis:
         self.flux_err = np.copy(flux_err)
 
     def mask_region(self, masks, rm='out'):
-        '''Mask (remove) a region of the spectrum. 
+        '''Mask (remove) a region of the spectrum.
 
         Parameters
         ----------
         masks : list of lists[float]
             The regions which you want to mask.
         rm : str, optional
-            To remove the region in the mask or out. Accepted values: 'in' and 
+            To remove the region in the mask or out. Accepted values: 'in' and
             'out'.
 
         Returns
@@ -101,22 +101,22 @@ class SpecAnalysis:
         return self.wl, self.flux, self.flux_err
 
     def cut(self, center, upper=10, lower=10, domain='wl'):
-        '''Cuts the wavelength, flux, and flux error and returns the values 
+        '''Cuts the wavelength, flux, and flux error and returns the values
         between center - lower and center + upper.
 
         Parameters
         ----------
         center : Real
             The center of the wavelengths where the cut should be taken, in the
-            same units as the wavelength. 
+            same units as the wavelength.
         upper : Positive Real, optional
-            The amount to go above the center when taking the cut, in the same 
+            The amount to go above the center when taking the cut, in the same
             units of nm if rtype=wl, or in km/s if rtype=vr.
         lower : Positive Real, optional
-            The amount to go below the center when taking the cut, in the same 
+            The amount to go below the center when taking the cut, in the same
             units of nm if rtype=wl, or in km/s if rtype=vr.
         domain : str, optional
-            The domain upper and lower is in. Either wl or vr (wavelength, 
+            The domain upper and lower is in. Either wl or vr (wavelength,
             radial velocity respectively).
 
         Returns
@@ -128,7 +128,7 @@ class SpecAnalysis:
         # convert to wavelength
         if domain == 'vr':
             lower = vr_to_wl(lower, center=center)
-            upper = vr_to_wl(upper, center=center) 
+            upper = vr_to_wl(upper, center=center)
 
         # cut
         low = center - lower
@@ -136,16 +136,16 @@ class SpecAnalysis:
         self.mask_region([[low, high]])
 
         return self.wl, self.flux, self.flux_err
-    
+
     def sigma_clip(self, func, args=(), sigma_cut=3, iterations=1):
         '''Clip outliers based on a sigma cut.
 
         Parameters
         ----------
         func : callable ``func(self.wl, self.flux, self.flux_err, *args)``.
-            The function to fit the spectrum to. 
+            The function to fit the spectrum to.
         args : tuple, optional
-            Extra arguments passed to func, 
+            Extra arguments passed to func,
             i.e., ``func(self.wl, self.flux, self.flux_err, *args)``.
         sigma_cut : float
             The tolerance on sigma clip.
@@ -167,19 +167,19 @@ class SpecAnalysis:
         return self.wl, self.flux, self.flux_err
 
     def cont_norm(self, center, mask_step=0.01, sigma_cut=3, iterations=3):
-        '''Normalise the continuum. Assumes you're normalising a line profile. 
-        1. Do basic normalisation. 
-        2. Sigma clip lines and outliers. 
+        '''Normalise the continuum. Assumes you're normalising a line profile.
+        1. Do basic normalisation.
+        2. Sigma clip lines and outliers.
         3. Fit theilslope on the clipped spectrum.
-        4. Remove fit from line. 
+        4. Remove fit from line.
         Only works for a small region with linear continuum.
 
         Parameters
         ----------
         center : float
-            The center of the line. 
+            The center of the line.
         mask_step : float
-            Width/2 of the line. 
+            Width/2 of the line.
         sigma_cut : float
             The tolerance on sigma clip.
         iterations : int
@@ -203,7 +203,7 @@ class SpecAnalysis:
         flux = flux/med
         flux_err = flux_err/med
 
-        # sigma clip 
+        # sigma clip
         self.save(wl, flux, flux_err)
         median = lambda x,y,z:np.median(y)
         self.sigma_clip(median, sigma_cut=sigma_cut, iterations=iterations)
@@ -221,15 +221,15 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def _gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
-        '''Only works for synthetic spectra because it uses cubicspline. Might 
+    def _gaussian_broaden(self, center=None, broad=0, mode='FWHM', num=None):
+        '''Only works for synthetic spectra because it uses cubicspline. Might
         be unpredictable for synthetic spectra with more than 1 line or gaps.
-        Should be ok for harder spectra, need to monitor effects. 
+        Should be ok for harder spectra, need to monitor effects.
         '''
 
         # convert to velocity space
-        delta_wl = self.wl - center
-        vr = wl_to_vr(delta_wl, center=center)
+        vr = _c*np.log(self.wl)
+        vr -= np.mean(vr) # shift to 0 to prevent cubicspline on large numbers
         cs = CubicSpline(vr, self.flux)
 
         # set kernel
@@ -237,7 +237,7 @@ class SpecAnalysis:
             sig = broad/2.35482
         elif mode == 'std':
             sig = broad
-        g_gen = stats.norm(0, sig) 
+        g_gen = stats.norm(0, sig)
 
         # set steps
         if num is None:
@@ -269,22 +269,22 @@ class SpecAnalysis:
 
         self.flux = flux_conv
 
-        return self.wl, self.flux  
+        return self.wl, self.flux
 
-    def gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
+    def gaussian_broaden(self, center=None, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline.
         Use the astropy version if you are already equidistant in velocity space without interpolation. Astropy convolves in pixel space. (stddev = speed of light / resolution / FWHM / velocity difference between adjacent pixels)
         Can change to not using cubicspline, but will introduce numerical differences due to under sampling of the gaussian + spectra.
-        Works better than hidden version because this one doesn't extrapolate spectra. It does compensate by scaling edge gaussians funny, so might still have some edge effects.  
+        Works better than hidden version because this one doesn't extrapolate spectra. It does compensate by scaling edge gaussians funny, so might still have some edge effects.
         Might be unpredictable for synthetic spectra with more than 1 line or gaps.
-        Should be ok for harder spectra, need to monitor effects. 
-        Idea is that the gaussians are placed where there are data points in the input spectra. This should help provide enough kernels for broadening where there is information. 
+        Should be ok for harder spectra, need to monitor effects.
+        Idea is that the gaussians are placed where there are data points in the input spectra. This should help provide enough kernels for broadening where there is information.
         broad = speed of light / resolution (FWHM in km/s)
         '''
 
         # convert to velocity space
-        delta_wl = self.wl - center
-        vr = wl_to_vr(delta_wl, center=center)
+        vr = _c*np.log(self.wl)
+        vr -= np.mean(vr) # shift to 0 to prevent cubicspline on large numbers
         cs = CubicSpline(vr, self.flux)
 
         # set kernel
@@ -292,7 +292,7 @@ class SpecAnalysis:
             sig = broad/2.35482
         elif mode == 'std':
             sig = broad
-        g_gen = stats.norm(0, sig)  
+        g_gen = stats.norm(0, sig)
 
         # set steps
         if num is None:
@@ -356,7 +356,7 @@ def polyfit(x, y, x_out=None, deg=1):
     # return fit and center
     if x_out is None:
         return center_x, fit[0], fit[1]
-    
+
     # return y evaluated at x_out
     y_out = np.polyval(fit, x_out - center_x)
     return y_out
@@ -368,7 +368,7 @@ def cut_wavelength(wavelength, center=670.9659, upper=10, lower=10):
     wavelength : List[Real] or 1darray
         Input wavelengths. Needs to be monotonically increasing.
     center : Real, optional
-        The center of the wavelengths where the cut should be taken, in the same units as the wavelength. 
+        The center of the wavelengths where the cut should be taken, in the same units as the wavelength.
     upper : Positive Real, optional
         The amount to go above the center when taking the cut, in the same units as the wavelength.
     lower : Positive Real, optional
@@ -394,7 +394,7 @@ def wl_to_vr(wl, center=670.9659):
     ----------
     wl : float or ndarray
         Wavelength to be converted, in nm.
-    center : float 
+    center : float
         The wavelength that vr=0 is at.
 
     Returns
@@ -409,13 +409,13 @@ def wl_to_vr(wl, center=670.9659):
         return np.array(wl)*_c/center
 
 def vr_to_wl(vr, center=670.9659):
-    '''Converts wavelengths to radial velocity, works for errors too. 
-    
+    '''Converts wavelengths to radial velocity, works for errors too.
+
     Parameters
     ----------
     vr : float or ndarray
         Radial velocity to be converted, in km/s.
-    center : float 
+    center : float
         The wavelength that vr=0 is at.
 
     Returns
@@ -430,14 +430,14 @@ def vr_to_wl(vr, center=670.9659):
         return np.array(vr)*center/_c
 
 def vac_to_air(lam):
-    '''Convert from vacuum to air wavelengths. 
+    '''Convert from vacuum to air wavelengths.
     From https://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
-    
+
     Parameters
     ----------
     lam : float or ndarray
         Wavelengths in vacuum in angstroms.
-        
+
     Returns
     -------
     air : float or ndarray
@@ -449,7 +449,7 @@ def vac_to_air(lam):
     return lam/n
 
 def air_to_vac(lam):
-    '''Convert from air to vacuum wavelengths. 
+    '''Convert from air to vacuum wavelengths.
     From https://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
 
     Parameters
@@ -462,7 +462,7 @@ def air_to_vac(lam):
     vac : float or ndarray
         Wavelengths in vacuum in angstroms.
     '''
-    
+
     s = 1e4/lam
     n = 1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2) + 0.0001599740894897 / (38.92568793293 - s**2)
     return lam*n
@@ -523,12 +523,12 @@ def cross_correlate(f, g, x_range, shifts, num=10000, plot=False):
 
     Parameters
     ----------
-    f : Function 
-        Function 1. 
-    g : Function 
-        Function 2. 
+    f : Function
+        Function 1.
+    g : Function
+        Function 2.
     x_range : tuple(Float)
-        The common range that f and g are defined over. 
+        The common range that f and g are defined over.
         i.e. f : [-2, 2] -> R
         g : [-1, 3] -> R
         Then x_range = (-1, 2)
@@ -575,12 +575,12 @@ def radial_velocity(f, g, x_range, shifts, num=10000, plot=False):
 
     Parameters
     ----------
-    f : Function 
-        Function 1. 
-    g : Function 
-        Function 2. 
+    f : Function
+        Function 1.
+    g : Function
+        Function 2.
     x_range : tuple(Float)
-        The common range that f and g are defined over. 
+        The common range that f and g are defined over.
         i.e. f : [-2, 2] -> R
         g : [-1, 3] -> R
         Then x_range = (-1, 2)
@@ -619,22 +619,22 @@ abundances = [12.00, 10.914,
             -np.inf, -np.inf, -np.inf, -np.inf]
 
 # atomic mass units of elements, from blue I think
-amu = [1.008, 4.003, 6.941, 9.012, 10.811, 12.011, 14.007, 15.999, 
-        18.998, 20.18, 22.99, 24.305, 26.982, 28.086, 30.974, 32.065, 
-        35.453, 39.948, 39.098, 40.078, 44.956, 47.867, 50.942, 51.996, 
-        54.938, 55.845, 58.933, 58.693, 63.546, 65.409, 69.723, 72.64, 
-        74.922, 78.96, 79.904, 83.798, 85.468, 87.62, 88.906, 91.224, 
-        92.906, 95.94, 98.0, 101.07, 102.906, 106.42, 107.868, 112.411, 
-        114.818, 118.71, 121.76, 127.6, 126.904, 131.293, 132.905, 
-        137.327, 138.906, 140.116, 140.908, 144.24, 145.0, 150.36, 
-        151.964, 157.25, 158.925, 162.5, 164.93, 167.259, 168.934, 
-        173.04, 174.967, 178.49, 180.948, 183.84, 186.207, 190.23, 
-        192.217, 195.078, 196.967, 200.59, 204.383, 207.2, 208.98, 
-        209.0, 210.0, 222.0, 223.0, 226.0, 227.0, 232.038, 231.036, 
+amu = [1.008, 4.003, 6.941, 9.012, 10.811, 12.011, 14.007, 15.999,
+        18.998, 20.18, 22.99, 24.305, 26.982, 28.086, 30.974, 32.065,
+        35.453, 39.948, 39.098, 40.078, 44.956, 47.867, 50.942, 51.996,
+        54.938, 55.845, 58.933, 58.693, 63.546, 65.409, 69.723, 72.64,
+        74.922, 78.96, 79.904, 83.798, 85.468, 87.62, 88.906, 91.224,
+        92.906, 95.94, 98.0, 101.07, 102.906, 106.42, 107.868, 112.411,
+        114.818, 118.71, 121.76, 127.6, 126.904, 131.293, 132.905,
+        137.327, 138.906, 140.116, 140.908, 144.24, 145.0, 150.36,
+        151.964, 157.25, 158.925, 162.5, 164.93, 167.259, 168.934,
+        173.04, 174.967, 178.49, 180.948, 183.84, 186.207, 190.23,
+        192.217, 195.078, 196.967, 200.59, 204.383, 207.2, 208.98,
+        209.0, 210.0, 222.0, 223.0, 226.0, 227.0, 232.038, 231.036,
         238.029, 237.0,244.0,243.0,247.0,247.0,251.0,254.0]
 
 def met_mass_frac(abundances):
-    '''Calculate the metallicity from abundances. Mass fraction. 
+    '''Calculate the metallicity from abundances. Mass fraction.
     Theorist definition (without log10).
 
     Parameters
@@ -655,7 +655,7 @@ def met_mass_frac(abundances):
     return met
 
 def met_num_frac(abundances):
-    '''Calculate the metallicity from abundances. Number fraction. 
+    '''Calculate the metallicity from abundances. Number fraction.
     Observer definition (with log10).
 
     Parameters
@@ -687,7 +687,7 @@ def gen_colours(colour_map, num):
     Returns
     -------
     colours : 2darray
-        The colours drawn in rgb values. 
+        The colours drawn in rgb values.
     '''
 
     cmap = cm.get_cmap(colour_map)
