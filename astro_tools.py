@@ -404,9 +404,9 @@ def wl_to_vr(wl, center=670.9659):
     '''
 
     if isinstance(wl, float):
-        return wl*_c/center
+        return _c*(np.log(wl)-np.log(center))
     else:
-        return np.array(wl)*_c/center
+        return _c*(np.log(np.array(wl))-np.log(center))
 
 def vr_to_wl(vr, center=670.9659):
     '''Converts wavelengths to radial velocity, works for errors too.
@@ -425,9 +425,9 @@ def vr_to_wl(vr, center=670.9659):
     '''
 
     if isinstance(vr, float):
-        return vr*center/_c
+        return center*np.exp(vr/_c)
     else:
-        return np.array(vr)*center/_c
+        return center*np.exp(np.array(vr)/_c)
 
 def vac_to_air(lam):
     '''Convert from vacuum to air wavelengths.
