@@ -221,15 +221,15 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def _gaussian_broaden(self, center=None, broad=0, mode='FWHM', num=None):
+    def _gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline. Might
         be unpredictable for synthetic spectra with more than 1 line or gaps.
         Should be ok for harder spectra, need to monitor effects.
         '''
 
         # convert to velocity space
-        vr = _c*np.log(self.wl)
-        vr -= np.mean(vr) # shift to 0 to prevent cubicspline on large numbers
+        delta_wl = self.wl - center
+        vr = wl_to_vr(delta_wl, center=center)
         cs = CubicSpline(vr, self.flux)
 
         # set kernel
@@ -271,7 +271,7 @@ class SpecAnalysis:
 
         return self.wl, self.flux
 
-    def gaussian_broaden(self, center=None, broad=0, mode='FWHM', num=None):
+    def gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline.
         Use the astropy version if you are already equidistant in velocity space without interpolation. Astropy convolves in pixel space. (stddev = speed of light / resolution / FWHM / velocity difference between adjacent pixels)
         Can change to not using cubicspline, but will introduce numerical differences due to under sampling of the gaussian + spectra.
@@ -283,8 +283,8 @@ class SpecAnalysis:
         '''
 
         # convert to velocity space
-        vr = _c*np.log(self.wl)
-        vr -= np.mean(vr) # shift to 0 to prevent cubicspline on large numbers
+        delta_wl = self.wl - center
+        vr = wl_to_vr(delta_wl, center=center)
         cs = CubicSpline(vr, self.flux)
 
         # set kernel
@@ -404,9 +404,9 @@ def wl_to_vr(wl, center=670.9659):
     '''
 
     if isinstance(wl, float):
-        return _c*(np.log(wl)-np.log(center))
+        return wl*_c/center
     else:
-        return _c*(np.log(np.array(wl))-np.log(center))
+        return np.array(wl)*_c/center
 
 def vr_to_wl(vr, center=670.9659):
     '''Converts wavelengths to radial velocity, works for errors too.
@@ -425,9 +425,9 @@ def vr_to_wl(vr, center=670.9659):
     '''
 
     if isinstance(vr, float):
-        return center*np.exp(vr/_c)
+        return vr*center/_c
     else:
-        return center*np.exp(np.array(vr)/_c)
+        return np.array(vr)*center/_c
 
 def vac_to_air(lam):
     '''Convert from vacuum to air wavelengths.
