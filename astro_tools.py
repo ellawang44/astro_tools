@@ -221,16 +221,16 @@ class SpecAnalysis:
 
         return self.wl, self.flux, self.flux_err
 
-    def _gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
+    def _gaussian_broaden(self, center=None, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline. Might
         be unpredictable for synthetic spectra with more than 1 line or gaps.
         Should be ok for harder spectra, need to monitor effects.
         '''
 
-        # convert to velocity space
-        delta_wl = self.wl - center
-        vr = wl_to_vr(delta_wl, center=center)
-        cs = CubicSpline(vr, self.flux)
+        # convert to log space, resolution is constant in log space
+        log_wl = _c*np.log(self.wl)
+        log_wl -= np.mean(log_wl) # shift to 0 to prevent cubic spline on large numbers
+        cs = CubicSpline(log_wl, self.flux)
 
         # set kernel
         if mode == 'FWHM':
@@ -241,26 +241,26 @@ class SpecAnalysis:
 
         # set steps
         if num is None:
-            vr_dist = vr[-1] - vr[0]
+            log_wl_dist = log_wl[-1] - log_wl[0]
             # this is based on the spectra
             # sample to the same as the minimum step size given in the input spectra
-            step_size = np.min(vr[1:] - vr[:-1])
-            num_spec = int(vr_dist / step_size) + 1
+            step_size = np.min(log_wl[1:] - log_wl[:-1])
+            num_spec = int(log_wl_dist / step_size) + 1
             num_spec *= 2 # something about Nyquist theorem... I mean this isn't really frequency, but if you squint...
             # this is based on the sigma
             # sample such that the gaussians are resolved by 5 points within 3 sigma
             num_points = 5
             step_size = 2*sig*3/num_points
-            num_gauss = int(vr_dist / step_size) + 1
+            num_gauss = int(log_wl_dist / step_size) + 1
             # pick the maximum, or else sampling goes funny
             num = max(num_spec, num_gauss)
 
         # convolve
-        tau = np.linspace(vr[0], vr[-1], num)
+        tau = np.linspace(log_wl[0], log_wl[-1], num)
         mask = np.abs(tau) <= sig*5
         convolver = g_gen.pdf(tau[mask])
         convolver /= np.sum(convolver)
-        create_x = (np.repeat([vr], tau.shape[0], axis=0).T - tau).T
+        create_x = (np.repeat([log_wl], tau.shape[0], axis=0).T - tau).T
         create_x = create_x[mask].T
         shifted_spec = cs(create_x)
 
@@ -271,7 +271,7 @@ class SpecAnalysis:
 
         return self.wl, self.flux
 
-    def gaussian_broaden(self, center, broad=0, mode='FWHM', num=None):
+    def gaussian_broaden(self, center=None, broad=0, mode='FWHM', num=None):
         '''Only works for synthetic spectra because it uses cubicspline.
         Use the astropy version if you are already equidistant in velocity space without interpolation. Astropy convolves in pixel space. (stddev = speed of light / resolution / FWHM / velocity difference between adjacent pixels)
         Can change to not using cubicspline, but will introduce numerical differences due to under sampling of the gaussian + spectra.
@@ -282,10 +282,10 @@ class SpecAnalysis:
         broad = speed of light / resolution (FWHM in km/s)
         '''
 
-        # convert to velocity space
-        delta_wl = self.wl - center
-        vr = wl_to_vr(delta_wl, center=center)
-        cs = CubicSpline(vr, self.flux)
+        # convert to log space, resolution is constant in log space
+        log_wl = _c*np.log(self.wl)
+        log_wl -= np.mean(log_wl) # shift to 0 to prevent cubic spline on large numbers
+        cs = CubicSpline(log_wl, self.flux)
 
         # set kernel
         if mode == 'FWHM':
@@ -296,23 +296,23 @@ class SpecAnalysis:
 
         # set steps
         if num is None:
-            vr_dist = vr[-1] - vr[0]
+            log_wl_dist = log_wl[-1] - log_wl[0]
             # this is based on the spectra
             # sample to the same as the minimum step size given in the input spectra
-            step_size = np.min(vr[1:] - vr[:-1])
-            num_spec = int(vr_dist / step_size) + 1
+            step_size = np.min(log_wl[1:] - log_wl[:-1])
+            num_spec = int(log_wl_dist / step_size) + 1
             num_spec *= 2 # something about Nyquist theorem... I mean this isn't really frequency, but if you squint...
             # this is based on the sigma
             # sample such that the gaussians are resolved by 5 points within 3 sigma
             num_points = 5
             step_size = 2*sig*3/num_points
-            num_gauss = int(vr_dist / step_size) + 1
+            num_gauss = int(log_wl_dist / step_size) + 1
             # pick the maximum, or else sampling goes funny
             num = max(num_spec, num_gauss)
 
         # convolve
-        tau = np.linspace(vr[0], vr[-1], num)
-        create_x = (vr - np.repeat([tau], len(vr), axis=0).T).T
+        tau = np.linspace(log_wl[0], log_wl[-1], num)
+        create_x = (log_wl - np.repeat([tau], len(log_wl), axis=0).T).T
         masks = [np.abs(row) < sig*5 for row in create_x]
         inds = range(len(masks))
         convolver = [g_gen.pdf(create_x[ind][masks[ind]]) for ind in inds]
